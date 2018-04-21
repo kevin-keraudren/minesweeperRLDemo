@@ -42,9 +42,14 @@ class GameVisualizer(object):
     def update(self, game):
         self._draw(game)
         if isinstance(self.pause, int):
-            time.sleep(self.pause)
+            pygame.time.delay(self.pause*1000)
         else:
-            input()
+            wait = True
+            while wait:
+                for event in pygame.event.get():
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_RETURN:
+                            wait=False
 
     def finish(self):
         pygame.quit()
@@ -72,4 +77,4 @@ class GameVisualizer(object):
                     else:
                         tile = self.tiles[game.counts[y][x]]
                 self.screen.blit(tile, (16 * x, 16 * y))
-        pygame.display.flip()
+        pygame.display.update()

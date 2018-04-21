@@ -27,9 +27,9 @@ class Game(object):
         self.width = config.width
         self.height = config.height
         self.num_mines = config.num_mines
-        self.board = [[False for y in range(self.height)] for x in range(self.width)]
-        self.exposed = [[False for y in range(self.height)] for x in range(self.width)]
-        self.counts = [[0 for y in range(self.height)] for x in range(self.width)]
+        self.board = [[False for _ in range(self.height)] for _ in range(self.width)]
+        self.exposed = [[False for _ in range(self.height)] for _ in range(self.width)]
+        self.counts = [[0 for _ in range(self.height)] for _ in range(self.width)]
         self.num_moves = 0
         self.num_safe_squares = self.width * self.height - self.num_mines
         self.num_exposed_squares = 0
