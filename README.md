@@ -18,15 +18,11 @@ The main changes from @HaniAlmousli are:
 
 CNN model:
 
-<img src="img/unet.png" height="600">
+<img src="img/unet.png" height="400">
 
-<img src="img/avg_q_values.png" height="600">
+<img src="img/avg_q_values.png" height="400"> <img src="img/training_loss.png" height="400">
 
-<img src="img/training_loss.png" height="600">
-
-<img src="img/avg_game_duration.png" height="600">
-
-<img src="img/percentage_of_wins.png" height="600">
+<img src="img/avg_game_duration.png" height="400"> <img src="img/percentage_of_wins.png" height="400">
 
 The advantage of using a CNN is that the model can be trained on a specific game size but can then be applied to games of any size. 
 
@@ -35,23 +31,23 @@ The advantage of using a CNN is that the model can be trained on a specific game
 
 Random Agent:
 
- <img src="img/testing_random_agent.png" height="600">
+ <img src="img/testing_random_agent.png" height="400">
 
 
 DQN Agent:
 
- <img src="img/testing_agent_dqn.png" height="600">
+ <img src="img/testing_agent_dqn.png" height="400">
 
  Results from @HaniAlmousli
  --------------------------
 
 Random Agent:
 
- <img src="img/RandomAI.png" height="600">
+ <img src="img/RandomAI.png" height="400">
 
 Ridge Regressor Agent:
 
- <img src="img/TrainedAgent.png" height="600">
+ <img src="img/TrainedAgent.png" height="400">
 
  Conclusion
  ----------
