@@ -7,19 +7,20 @@ from scipy import ndimage
 
 WINREWARD = 10
 LOSREWARD = -10
-PROGRESSREWARD= 1
+PROGRESSREWARD = 1
+
+w_k = np.array([[1, 1, 1],
+                [1, 0, 1],
+                [1, 1, 1], ],
+               dtype='int')
 
 
-w_k = np.array(    [[1, 1, 1],
-                    [1, 0, 1],
-                    [1, 1, 1],],
-                   dtype='int')
 class GameConfig(object):
     def __init__(self, width=8, height=8, num_mines=10):
         self.width = width
         self.height = height
         self.num_mines = num_mines
-        self.cellsStateCount=10
+        self.cellsStateCount = 10
 
 
 class Game(object):
@@ -47,7 +48,6 @@ class Game(object):
 	list of squares exposed.
         """
         if self._is_outside_board(x, y):
-            # raise ValueError('Position ({0},{1}) is outside the board'.format(x, y))
             print("_________________________________ WRONG 1")
             return None
         if self.explosion:
@@ -60,13 +60,12 @@ class Game(object):
         if self.board[x][y]:
             self.explosion = True
             self.exposed[x][y] = True
-            return MoveResult(True,reward=LOSREWARD)
+            return MoveResult(True, reward=LOSREWARD)
 
-        updatedBoard=self._update_board(x, y)
+        updatedBoard = self._update_board(x, y)
         if self.num_exposed_squares == self.num_safe_squares:
-            # pdb.set_trace()
-            return MoveResult(False,updatedBoard ,reward=WINREWARD)
-        return MoveResult(False, updatedBoard,reward=PROGRESSREWARD)
+            return MoveResult(False, updatedBoard, reward=WINREWARD)
+        return MoveResult(False, updatedBoard, reward=PROGRESSREWARD)
 
     def get_state(self):
         """
@@ -74,22 +73,20 @@ class Game(object):
         None means not exposed and the rest are counts
         This does not contain the exploded mine if one exploded.
         """
-
-        # state = [[None for y in range(self.height)] for x in range(self.width)]
-        # for x in range(self.width):
-        #     for y in range(self.height):
-        #         if self.exposed[x][y]:
-        #             state[x][y] = self.counts[x][y]
-        # pdb.set_trace()
-
-        state= np.asarray([[None]*self.width]*self.height)
+        state = np.asarray([[None] * self.width] * self.height)
         counts = np.asarray(self.counts)
         exposed = np.asarray(self.exposed)
-        state[exposed]=counts[exposed]
+        state[exposed] = counts[exposed]
         return state.tolist()
 
     def is_game_over(self):
         return self.explosion or self.num_exposed_squares == self.num_safe_squares
+
+    def victory(self):
+        return self.num_exposed_squares == self.num_safe_squares
+
+    def defeat(self):
+        return self.explosion
 
     def set_flags(self, flags):
         self.flags = flags
@@ -101,24 +98,12 @@ class Game(object):
             y = random.randint(0, self.height - 1)
             mines.add((x, y))
             self.board[x][y] = True
-        # for coords in mines:
-        #     self.board[coords[0]][coords[1]] = True
 
     def _init_counts(self):
         """Calculates how many neighboring squares have minds for all squares"""
-        # pdb.set_trace()
-        
-        # for x in range(self.width):
-        #     for y in range(self.height):
-        #         for x_offset in [-1, 0, 1]:
-        #             for y_offset in [-1, 0, 1]:
-        #                 if x_offset != 0 or y_offset != 0:
-        #                     if not self._is_outside_board(x + x_offset, y + y_offset):
-        #                         self.counts[x][y] += int(self.board[x + x_offset][y + y_offset])
-        x = np.asarray(self.board,'int')
-        # self.counts = (signal.convolve2d(x, w_k, 'same')).tolist()
-        self.counts = np.asarray(self.counts,'int')
-        ndimage.convolve(x,w_k, output=self.counts ,mode='constant')
+        x = np.asarray(self.board, 'int')
+        self.counts = np.asarray(self.counts, 'int')
+        ndimage.convolve(x, w_k, output=self.counts, mode='constant')
         self.counts = self.counts.tolist()
 
     def _update_board(self, x, y):
@@ -164,8 +149,8 @@ class Game(object):
             return True
         return False
 
-    def IsActionValid(self,row,col):
-        return not(self.exposed[row][col])
+    def IsActionValid(self, row, col):
+        return not (self.exposed[row][col])
 
 
 class Position(object):
@@ -179,7 +164,7 @@ class Position(object):
 
 
 class MoveResult(object):
-    def __init__(self, explosion, new_squares=[],reward=0):
+    def __init__(self, explosion, new_squares=[], reward=0):
         self.explosion = explosion
         self.new_squares = new_squares
         self.reward = reward
@@ -236,6 +221,8 @@ Run a set of games to evaluate a GameAI
 
 Returns a list of GameResult objects
 """
+
+
 def run_games(config, num_games, ai, viz=None):
     results = []
     for x in range(num_games):
@@ -243,7 +230,6 @@ def run_games(config, num_games, ai, viz=None):
         ai.init(config)
         if viz: viz.start(game)
         while not game.is_game_over():
-            # pdb.set_trace()
             coords = ai.next()
             result = game.select(*coords)
             if result is None:
@@ -254,11 +240,9 @@ def run_games(config, num_games, ai, viz=None):
             print(np.asarray(game.get_state()))
 
             if viz: viz.update(game)
-            # pdb.set_trace()
 
         if result.explosion:
             print("EXPLOOOOOOOOOSION")
-            # pdb.set_trace()
         if viz: viz.finish()
         results.append(GameResult(not game.explosion, game.num_moves))
     return results

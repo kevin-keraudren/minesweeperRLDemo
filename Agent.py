@@ -1,15 +1,17 @@
-import random
-from abc import ABCMeta, abstractmethod
-import pdb
-from minesweeper import *
-import pickle
+from minesweeper import GameAI
 import numpy as np
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import Ridge, SGDRegressor
-from itertools import compress
-import cProfile
 import os
 import joblib
+
+
+def one_hot_encoding(game_state):
+    # Convert the minesweeper into one hot big state vector (every cell has 10 one hot rep)
+    cellsStateCount = 10
+    cells = np.reshape(np.asarray(game_state), -1)
+    cells[np.isnan(cells.astype(float))] = 9
+    return np.reshape(np.eye(cellsStateCount)[np.asarray(cells, 'int')], [-1])
 
 
 class Agent(GameAI):
@@ -23,6 +25,9 @@ class Agent(GameAI):
 
     In the original implementation, we train a regressor per action that predicts the Q value given a state,
     at every update, we train a brand new set of regressors.
+
+    Instead, we propose to use a regressor with a partial_fit method:
+    http://scikit-learn.org/stable/modules/scaling_strategies.html#incremental-learning
     """
 
     def __init__(self, config, game, inputDic):
@@ -43,9 +48,7 @@ class Agent(GameAI):
         self.n_actions = self.width * self.height
 
         # Convert the minesweeper into one hot big state vector (every cell has 10 one hot rep)
-        cells = np.reshape(np.asarray(self.game.get_state()), -1)
-        cells[np.isnan(cells.astype(float))] = 9
-        self.currentState = np.reshape(np.eye(self.config.cellsStateCount)[np.asarray(cells, 'int')], [-1])
+        self.currentState = one_hot_encoding(self.game.get_state())
 
         # Extract Info from inputDic
         self.inputDic = inputDic
@@ -78,14 +81,11 @@ class Agent(GameAI):
         self.recorded_actions[self.COUNTERMEM] = selectedAction
 
         # Get the new state
-        cells2 = np.reshape(np.asarray(self.game.get_state()), -1)
-        cells2[np.isnan(cells2.astype(float))] = 9
         if result.explosion:
             self.recorded_targets[self.COUNTERMEM] = result.reward
         else:
-            self.currentState = np.reshape(np.eye(self.config.cellsStateCount)[np.asarray(cells2, 'int')], [-1])
-            maxQ = self.qFunction(self.currentState)
-            self.recorded_targets[self.COUNTERMEM] = result.reward + self.discountFactor * maxQ
+            self.currentState = one_hot_encoding(self.game.get_state())
+            self.recorded_targets[self.COUNTERMEM] = result.reward + self.discountFactor * self.maxQ(self.currentState)
         self.COUNTERMEM += 1
         if self.COUNTERMEM == self.memorySize:
             self.updateParams()
@@ -105,7 +105,7 @@ class Agent(GameAI):
         Q = self.predict_Q_value(currentState)
         takeMaxAction = self.rng.binomial(n=1, p=1 - self.epsilonProb, size=1)[0]
         selectedActionId = self.getValidAction(Q, takeMaxAction)
-        coords = int(selectedActionId / self.config.width), int(selectedActionId % self.config.width)
+        coords = selectedActionId // self.config.width, selectedActionId % self.config.width
         result = self.game.select(*coords)
         return result, selectedActionId
 
@@ -125,7 +125,7 @@ class Agent(GameAI):
                 counter += 1
             return indices[counter]
 
-    def qFunction(self, currentState):
+    def maxQ(self, currentState):
         """
         Get The max Q Value using the best action
         """
@@ -142,10 +142,7 @@ class Agent(GameAI):
         This is called when a game reaches end and we need to start a new game. The new game is passed as a param
         """
         self.game = game
-        # Convert the minesweeper into one hot big state vector (every cell has 10 one hot rep)
-        cells = np.reshape(np.asarray(self.game.get_state()), -1)
-        cells[np.isnan(cells.astype(float))] = 9
-        self.currentState = np.reshape(np.eye(self.config.cellsStateCount)[np.asarray(cells, 'int')], [-1])
+        self.currentState = one_hot_encoding(self.game.get_state())
 
     def updateParams(self):
         print("UPDATING Model")
@@ -169,20 +166,18 @@ class Agent(GameAI):
             self.exposed_squares.add((position.x, position.y))
 
     def next(self):
-        cells = np.reshape(np.asarray(self.game.get_state()), -1)
-        cells[np.isnan(cells.astype(float))] = 9
-        currentState = np.reshape(np.eye(self.config.cellsStateCount)[np.asarray(cells, 'int')], [-1])
+        currentState = one_hot_encoding(self.game.get_state())
         counter = 0
         Q = self.predict_Q_value(currentState)
         zipped = list(zip(Q, self.actionsId))
         zipped.sort(key=lambda t: t[0], reverse=True)
         q, aIds = zip(*zipped)
-        row = int(aIds[counter] / self.config.width)
-        col = int(aIds[counter] % self.config.width)
-        while self.game.IsActionValid(row, col) == False:
+        row = aIds[counter] // self.config.width
+        col = aIds[counter] % self.config.width
+        while not self.game.IsActionValid(row, col):
             counter += 1
-            row = int(aIds[counter] / self.config.width)
-            col = int(aIds[counter] % self.config.width)
+            row = aIds[counter] // self.config.width
+            col = aIds[counter] % self.config.width
         return row, col
 
     def SaveParams(self):

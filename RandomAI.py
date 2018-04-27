@@ -75,15 +75,11 @@ if __name__ == "__main__":
         if viz: viz.finish()
         counter += 1
 
+    fig = plt.figure(figsize=(10, 10))
     plt.hist(lstSteps, normed=0, bins=np.max(lstSteps), edgecolor='black')
-    plt.show()
-    TOOLS = "pan,wheel_zoom,box_zoom,reset,save"
-    p1 = figure(tools=TOOLS, toolbar_location="above",
-                title="Random AI (GAMES_COUNT: ) " + str(GAMES_COUNT) + " . " + str(counterWins) + " Wins.",
-                logo="grey", background_fill_color="#E8DDCB")
-    hist, edges = np.histogram(np.asarray(lstSteps), density=False, bins=np.max(lstSteps))
-    p1.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], fill_color="#036564", line_color="#033649")
-    p1.legend.location = "center_right"
-    p1.legend.background_fill_color = "darkgrey"
-
-    show(p1)
+    plt.xlabel('Game duration')
+    plt.ylabel('Frequency')
+    plt.grid(True)
+    plt.title('Testing random agent: %s/%s wins' % (counterWins, GAMES_COUNT))
+    plt.savefig("testing_random_agent.png")
+    plt.close()
